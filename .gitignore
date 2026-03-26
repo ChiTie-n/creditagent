@@ -1,0 +1,6 @@
+creditagent/models/xgboost_model.pkl
+creditagent/data/default of credit card clients.xls
+__pycache__/
+*.pyc
+.env
+archive.zip

@@ -1,0 +1,45 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1629;
+  --bg-card: #151d35;
+  --bg-card-hover: #1a2442;
+  --border: #1e2d4a;
+  --text-primary: #e2e8f0;
+  --text-secondary: #64748b;
+  --text-muted: #334155;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-red: #ef4444;
+  --glow-blue: rgba(59,130,246,0.3);
+  --glow-green: rgba(16,185,129,0.3);
+  --glow-purple: rgba(139,92,246,0.3);
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+}
+
+#root { height: 100vh; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
