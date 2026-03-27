@@ -25,6 +25,9 @@ function ScoreBar({ label, value, color }) {
 
 export default function ResultSidebar({ result, borrowerId }) {
   const ds = DECISION_STYLE[result.decision] || DECISION_STYLE.DENY
+  const thinFileLabel = result.decision === 'APPROVE'
+    ? '◆ THIN-FILE — Approved via Alternative Data'
+    : '◆ THIN-FILE — Assessed via Alternative Data'
 
   return (
     <div style={{
@@ -107,10 +110,9 @@ export default function ResultSidebar({ result, borrowerId }) {
           background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.3)',
           fontSize: '11px', color: '#a78bfa',
         }}>
-          ◆ THIN-FILE — Approved via Alternative Data
+          {thinFileLabel}
         </div>
       )}
-
       <div style={{ height: '1px', background: 'var(--border)', margin: '16px 0' }} />
 
       {/* Key strengths */}

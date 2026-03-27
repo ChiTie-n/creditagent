@@ -220,6 +220,15 @@ def _estimate_monthly_cashflow(data: dict) -> float:
     return max(bank_proxy, mobile_proxy)
 
 
+def _apply_decision_overrides(decision: str, confidence: float, bias_detected: bool) -> tuple[str, str | None]:
+    """Apply post-scoring overrides consistently across fallback, streaming, and LLM paths."""
+    if bias_detected and decision == "APPROVE":
+        return "ESCALATE", "Bias detected - escalating APPROVE to ESCALATE"
+    if confidence < 0.70 and decision == "APPROVE":
+        return "ESCALATE", f"Low confidence ({confidence:.2f}) - escalating APPROVE to ESCALATE"
+    return decision, None
+
+
 def _fallback_pipeline(borrower_id: str, registry: ToolRegistry, memory: AgentMemory) -> dict:
     """
     Deterministic fallback pipeline used when LLM is unavailable.
@@ -304,6 +313,15 @@ def _fallback_pipeline(borrower_id: str, registry: ToolRegistry, memory: AgentMe
         final_decision = "ESCALATE"
         override_reason = f"Low confidence ({confidence:.2f}) — escalating APPROVE→ESCALATE"
         memory.add_thought("ReActOrchestrator", override_reason)
+
+    if override_reason is None:
+        final_decision, override_reason = _apply_decision_overrides(
+            final_decision,
+            confidence,
+            fairness["bias_detected"],
+        )
+        if override_reason:
+            memory.add_thought("ReActOrchestrator", override_reason)
 
     processing_ms = int((time.time() - start) * 1000)
 
@@ -436,12 +454,26 @@ class ReActOrchestrator:
                 risk = observations.get("risk_result", {})
                 fairness = observations.get("fairness_result", {})
                 explanation = observations.get("explanation_result", {})
+                base_decision = risk.get("decision", fa.get("decision", "UNKNOWN"))
+                confidence = risk.get("confidence", fa.get("confidence", 0.5))
+                bias_detected = fairness.get("bias_detected", fa.get("bias_detected", False))
+                final_decision, override_reason = _apply_decision_overrides(
+                    base_decision,
+                    confidence,
+                    bias_detected,
+                )
 
                 agent_pipeline = _build_pipeline_from_memory(memory)
+                if override_reason and not any(step.get("status") == "override" for step in agent_pipeline):
+                    agent_pipeline.append({
+                        "agent": "ReActOrchestrator",
+                        "status": "override",
+                        "output": override_reason,
+                    })
 
                 record_decision(
                     borrower_id,
-                    risk.get("decision", fa.get("decision", "UNKNOWN")),
+                    final_decision,
                     risk.get("composite_score", fa.get("composite_score", 0)),
                     parsed["thought"],
                 )
@@ -457,7 +489,7 @@ class ReActOrchestrator:
                     "scenario": data.get("scenario", ""),
                     "composite_score": risk.get("composite_score", fa.get("composite_score", 0)),
                     "risk_tier": risk.get("risk_tier", fa.get("risk_tier", "")),
-                    "decision": risk.get("decision", fa.get("decision", "UNKNOWN")),
+                    "decision": final_decision,
                     "credit_limit": risk.get("credit_limit", fa.get("credit_limit", 0)),
                     "interest_rate_range": risk.get("interest_rate_range", fa.get("interest_rate_range", "N/A")),
                     "financial_score": fin.get("financial_score", fa.get("financial_score", 0)),
@@ -466,7 +498,7 @@ class ReActOrchestrator:
                     "key_strengths": ks,
                     "key_concerns": kc,
                     "report": fa.get("report", explanation.get("report", "")),
-                    "bias_detected": fairness.get("bias_detected", fa.get("bias_detected", False)),
+                    "bias_detected": bias_detected,
                     "fairness_metrics": fairness.get("fairness_metrics", {}),
                     "processing_time_ms": processing_ms,
                     "data_completeness": data.get("data_completeness", 1.0),
@@ -474,7 +506,7 @@ class ReActOrchestrator:
                     "score_breakdown": risk.get("score_breakdown", {}),
                     "alternative_signals": alt.get("signals", {}),
                     "agent_pipeline": agent_pipeline,
-                    "confidence": risk.get("confidence", fa.get("confidence", 0.5)),
+                    "confidence": confidence,
                     "reasoning_trace": memory.to_trace(),
                     "agentic_mode": "react_llm",
                     "reasoning_summary": fa.get("reasoning_summary", parsed["thought"]),
@@ -605,6 +637,14 @@ class ReActOrchestrator:
                 risk = observations.get("risk_result", {})
                 fairness = observations.get("fairness_result", {})
                 explanation = observations.get("explanation_result", {})
+                base_decision = risk.get("decision", fa.get("decision", "UNKNOWN"))
+                confidence = risk.get("confidence", fa.get("confidence", 0.5))
+                bias_detected = fairness.get("bias_detected", fa.get("bias_detected", False))
+                final_decision, _ = _apply_decision_overrides(
+                    base_decision,
+                    confidence,
+                    bias_detected,
+                )
 
                 ks = fa.get("key_strengths", explanation.get("key_strengths", []))
                 kc = fa.get("key_concerns", explanation.get("key_concerns", []))
@@ -617,7 +657,7 @@ class ReActOrchestrator:
                     "scenario": data.get("scenario", ""),
                     "composite_score": risk.get("composite_score", fa.get("composite_score", 0)),
                     "risk_tier": risk.get("risk_tier", fa.get("risk_tier", "")),
-                    "decision": risk.get("decision", fa.get("decision", "UNKNOWN")),
+                    "decision": final_decision,
                     "credit_limit": risk.get("credit_limit", fa.get("credit_limit", 0)),
                     "interest_rate_range": risk.get("interest_rate_range", fa.get("interest_rate_range", "N/A")),
                     "financial_score": fin.get("financial_score", fa.get("financial_score", 0)),
@@ -626,13 +666,13 @@ class ReActOrchestrator:
                     "key_strengths": ks,
                     "key_concerns": kc,
                     "report": fa.get("report", explanation.get("report", "")),
-                    "bias_detected": fairness.get("bias_detected", fa.get("bias_detected", False)),
+                    "bias_detected": bias_detected,
                     "fairness_metrics": fairness.get("fairness_metrics", {}),
                     "data_completeness": data.get("data_completeness", 1.0),
                     "shap_summary": explanation.get("shap_summary", fin.get("shap_summary", {})),
                     "alternative_signals": alt.get("signals", {}),
                     "score_breakdown": risk.get("score_breakdown", {}),
-                    "confidence": risk.get("confidence", fa.get("confidence", 0.5)),
+                    "confidence": confidence,
                     "agentic_mode": "react_llm",
                     "reasoning_summary": fa.get("reasoning_summary", parsed["thought"]),
                 }}
@@ -883,6 +923,12 @@ def _fallback_pipeline_streaming(borrower_id: str, registry: ToolRegistry):
     if fairness["bias_detected"] and final_decision == "APPROVE":
         final_decision = "ESCALATE"
         yield {"type": "thought", "content": "⚠ Bias detected — overriding APPROVE → ESCALATE",
+               "agent": "Orchestrator", "ts": time.time()}
+
+    if final_decision == "APPROVE" and risk.get("confidence", 0.8) < 0.70:
+        final_decision = "ESCALATE"
+        yield {"type": "thought",
+               "content": f"Low confidence ({risk.get('confidence', 0.8):.2f}) - escalating APPROVE to ESCALATE",
                "agent": "Orchestrator", "ts": time.time()}
 
     # Final result
