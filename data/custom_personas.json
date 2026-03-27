@@ -1,38 +1,11 @@
 {
-  "custom_001": {
-    "name": "Test 1",
-    "business_name": "AAA",
-    "business_type": "household_business",
-    "scenario": "AAAA",
-    "loan_purpose": "140000000",
-    "loan_amount_requested": 20000000.0,
-    "expected_decision": "UNKNOWN",
-    "profile": {
-      "gender": "female",
-      "age_group": "25-35",
-      "employment_type": "household_business",
-      "region": "urban",
-      "province": "Ho Chi Minh City"
-    },
-    "utility_data": {
-      "provider": "EVN",
-      "months_history": 24,
-      "on_time_rate": 0.95
-    },
-    "mobile_data": {
-      "platform": "MoMo",
-      "consistency_score": 0.85,
-      "monthly_volume": 15000000.0
-    },
-    "bank_data": null
-  },
   "custom_002": {
     "name": "Test 2",
     "business_name": "aaaa",
     "business_type": "household_business",
     "scenario": "aaaa",
     "loan_purpose": "20000000000000000000",
-    "loan_amount_requested": 20000000000000000000000000.0,
+    "loan_amount_requested": 2e+25,
     "expected_decision": "UNKNOWN",
     "profile": {
       "gender": "female",

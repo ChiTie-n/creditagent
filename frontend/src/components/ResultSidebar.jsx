@@ -23,7 +23,7 @@ function ScoreBar({ label, value, color }) {
   )
 }
 
-export default function ResultSidebar({ result, borrowerId }) {
+export default function ResultSidebar({ result, borrowerId, isMobile = false }) {
   const ds = DECISION_STYLE[result.decision] || DECISION_STYLE.DENY
   const thinFileLabel = result.decision === 'APPROVE'
     ? '◆ THIN-FILE — Approved via Alternative Data'
@@ -32,10 +32,12 @@ export default function ResultSidebar({ result, borrowerId }) {
   return (
     <div style={{
       background: 'var(--bg-secondary)',
-      padding: '24px 20px',
+      padding: isMobile ? '16px 14px 24px' : '24px 20px',
       overflowY: 'auto',
-      borderLeft: '1px solid var(--border)',
+      borderLeft: isMobile ? 'none' : '1px solid var(--border)',
+      borderTop: isMobile ? '1px solid var(--border)' : 'none',
       animation: 'slideInRight 0.5s ease',
+      minHeight: 0,
     }}>
       <div style={{ fontSize: '11px', color: 'var(--text-secondary)', letterSpacing: '1px', marginBottom: 16 }}>
         ASSESSMENT RESULT
@@ -59,7 +61,7 @@ export default function ResultSidebar({ result, borrowerId }) {
         background: ds.bg,
         boxShadow: `0 0 24px ${ds.glow}`,
       }}>
-        <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '3px', color: ds.color }}>
+        <div style={{ fontSize: isMobile ? '24px' : '28px', fontWeight: 800, letterSpacing: isMobile ? '2px' : '3px', color: ds.color }}>
           {result.decision}
         </div>
         <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: 4 }}>
@@ -74,7 +76,7 @@ export default function ResultSidebar({ result, borrowerId }) {
         background: 'var(--bg-card)', border: '1px solid var(--border)',
       }}>
         <div style={{
-          fontSize: '52px', fontWeight: 800, lineHeight: 1,
+          fontSize: isMobile ? '42px' : '52px', fontWeight: 800, lineHeight: 1,
           background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         }}>

@@ -62,9 +62,11 @@ export default function LeftSidebar({
   selected,
   onSelect,
   onRun,
+  onDeleteBorrower,
   isRunning,
   runningBorrower,
   resultsByBorrower,
+  isMobile = false,
 }) {
   const [personas, setPersonas] = useState([])
   const [showForm, setShowForm] = useState(false)
@@ -80,6 +82,7 @@ export default function LeftSidebar({
   }, [])
 
   const selectedHasResult = selected ? Boolean(resultsByBorrower[selected]) : false
+  const formGrid = isMobile ? '1fr' : '1fr 1fr'
 
   const updateForm = (key, value) => {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -164,25 +167,62 @@ export default function LeftSidebar({
     }
   }
 
+  const handleDeletePersona = async (borrowerId, name) => {
+    const confirmed = window.confirm(`Delete custom profile "${name}"?`)
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`/personas/${borrowerId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        let detail = 'Failed to delete borrower'
+        try {
+          const data = await response.json()
+          detail = data.detail || detail
+        } catch {}
+        throw new Error(detail)
+      }
+
+      setPersonas(prev => prev.filter(persona => persona.borrower_id !== borrowerId))
+      onDeleteBorrower?.(borrowerId)
+    } catch (error) {
+      window.alert(error.message || 'Failed to delete borrower')
+    }
+  }
+
   return (
     <div style={{
       background: 'var(--bg-secondary)',
-      padding: '24px 20px',
       display: 'flex',
       flexDirection: 'column',
-      gap: '20px',
-      overflowY: 'auto',
+      height: '100%',
+      minHeight: 0,
     }}>
-      <div>
+      <div style={{
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        padding: isMobile ? '16px 14px 16px' : '24px 20px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehavior: 'contain',
+      }}>
+      {!isMobile && (
+        <div>
         <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '2px', color: 'var(--accent-blue)' }}>
           CREDITAGENT
         </div>
         <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 4 }}>
           AGENTIC AI CREDIT SYSTEM
         </div>
-      </div>
+        </div>
+      )}
 
-      <div style={{ height: '1px', background: 'var(--border)' }} />
+      {!isMobile && <div style={{ height: '1px', background: 'var(--border)' }} />}
 
       <div style={{
         border: '1px solid var(--border)',
@@ -236,7 +276,7 @@ export default function LeftSidebar({
               <input value={form.loan_purpose} onChange={e => updateForm('loan_purpose', e.target.value)} style={inputStyle} />
             </Field>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
               <Field label="LOAN AMOUNT">
                 <input value={form.loan_amount_requested} onChange={e => updateForm('loan_amount_requested', e.target.value)} style={inputStyle} />
               </Field>
@@ -245,7 +285,7 @@ export default function LeftSidebar({
               </Field>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
               <Field label="GENDER">
                 <select value={form.gender} onChange={e => updateForm('gender', e.target.value)} style={inputStyle}>
                   <option value="female">Female</option>
@@ -262,7 +302,7 @@ export default function LeftSidebar({
               </Field>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
               <Field label="EMPLOYMENT TYPE">
                 <input value={form.employment_type} onChange={e => updateForm('employment_type', e.target.value)} style={inputStyle} />
               </Field>
@@ -288,7 +328,7 @@ export default function LeftSidebar({
               gap: 10,
             }}>
               <div style={{ fontSize: '10px', color: '#34d399', letterSpacing: '1px' }}>ALTERNATIVE DATA</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
                 <Field label="UTILITY PROVIDER">
                   <input value={form.utility_provider} onChange={e => updateForm('utility_provider', e.target.value)} style={inputStyle} />
                 </Field>
@@ -297,7 +337,7 @@ export default function LeftSidebar({
                 </Field>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
                 <Field label="UTILITY MONTHS">
                   <input value={form.utility_months_history} onChange={e => updateForm('utility_months_history', e.target.value)} style={inputStyle} />
                 </Field>
@@ -306,7 +346,7 @@ export default function LeftSidebar({
                 </Field>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
                 <Field label="CONSISTENCY SCORE">
                   <input value={form.mobile_consistency_score} onChange={e => updateForm('mobile_consistency_score', e.target.value)} style={inputStyle} />
                 </Field>
@@ -334,7 +374,7 @@ export default function LeftSidebar({
             {form.has_bank_data && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ fontSize: '10px', color: '#fbbf24', letterSpacing: '1px' }}>BANK DATA</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
                   <Field label="LIMIT BAL">
                     <input value={form.bank_limit_bal} onChange={e => updateForm('bank_limit_bal', e.target.value)} style={inputStyle} />
                   </Field>
@@ -342,7 +382,7 @@ export default function LeftSidebar({
                     <input value={form.bank_age} onChange={e => updateForm('bank_age', e.target.value)} style={inputStyle} />
                   </Field>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
                   <Field label="SEX">
                     <select value={form.bank_sex} onChange={e => updateForm('bank_sex', e.target.value)} style={inputStyle}>
                       <option value="1">Male</option>
@@ -358,7 +398,7 @@ export default function LeftSidebar({
                     </select>
                   </Field>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
                   <Field label="MARRIAGE">
                     <select value={form.bank_marriage} onChange={e => updateForm('bank_marriage', e.target.value)} style={inputStyle}>
                       <option value="1">Married</option>
@@ -370,7 +410,7 @@ export default function LeftSidebar({
                     <input value={form.bank_pay_0} onChange={e => updateForm('bank_pay_0', e.target.value)} style={inputStyle} />
                   </Field>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
                   <Field label="PAY 2">
                     <input value={form.bank_pay_2} onChange={e => updateForm('bank_pay_2', e.target.value)} style={inputStyle} />
                   </Field>
@@ -378,7 +418,7 @@ export default function LeftSidebar({
                     <input value={form.bank_pay_3} onChange={e => updateForm('bank_pay_3', e.target.value)} style={inputStyle} />
                   </Field>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: formGrid, gap: 10 }}>
                   <Field label="BILL AMT1">
                     <input value={form.bank_bill_amt1} onChange={e => updateForm('bank_bill_amt1', e.target.value)} style={inputStyle} />
                   </Field>
@@ -429,6 +469,20 @@ export default function LeftSidebar({
         <div style={{ fontSize: '11px', color: 'var(--text-secondary)', letterSpacing: '1px', marginBottom: 12 }}>
           SELECT BORROWER
         </div>
+        {isMobile && selected && (
+          <div style={{
+            marginBottom: 12,
+            padding: '10px 12px',
+            borderRadius: '10px',
+            border: '1px solid rgba(59,130,246,0.22)',
+            background: 'rgba(59,130,246,0.08)',
+            fontSize: '11px',
+            color: '#bfdbfe',
+            lineHeight: 1.5,
+          }}>
+            Profile selected. Tap <strong>RUN ASSESSMENT</strong> below to start reviewing this borrower.
+          </div>
+        )}
         {personas.map(p => {
           const hasResult = Boolean(resultsByBorrower[p.borrower_id])
           const isSelected = selected === p.borrower_id
@@ -450,20 +504,42 @@ export default function LeftSidebar({
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
                 <div style={{ fontSize: '13px', fontWeight: 600 }}>{p.name}</div>
-                {hasResult && (
-                  <div style={{
-                    fontSize: '9px',
-                    color: '#34d399',
-                    letterSpacing: '0.8px',
-                    border: '1px solid rgba(52,211,153,0.25)',
-                    background: 'rgba(16,185,129,0.08)',
-                    padding: '2px 6px',
-                    borderRadius: '999px',
-                    flexShrink: 0,
-                  }}>
-                    SAVED
-                  </div>
-                )}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                  {hasResult && (
+                    <div style={{
+                      fontSize: '9px',
+                      color: '#34d399',
+                      letterSpacing: '0.8px',
+                      border: '1px solid rgba(52,211,153,0.25)',
+                      background: 'rgba(16,185,129,0.08)',
+                      padding: '2px 6px',
+                      borderRadius: '999px',
+                    }}>
+                      SAVED
+                    </div>
+                  )}
+                  {p.borrower_id.startsWith('custom_') && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeletePersona(p.borrower_id, p.name)
+                      }}
+                      style={{
+                        border: '1px solid rgba(239,68,68,0.28)',
+                        background: 'rgba(239,68,68,0.08)',
+                        color: '#fda4af',
+                        borderRadius: '999px',
+                        padding: '3px 8px',
+                        fontSize: '9px',
+                        letterSpacing: '0.8px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      DELETE
+                    </button>
+                  )}
+                </div>
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 2 }}>{p.scenario}</div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
@@ -499,13 +575,52 @@ export default function LeftSidebar({
           )
         })}
       </div>
+      </div>
 
-      <div style={{ flex: 1 }} />
+      <div style={{
+        borderTop: '1px solid var(--border)',
+        background: 'linear-gradient(180deg, rgba(15,22,41,0.92), rgba(15,22,41,1))',
+        boxShadow: '0 -10px 24px rgba(2,6,23,0.22)',
+        padding: isMobile ? '12px 14px calc(14px + env(safe-area-inset-bottom))' : '14px 20px 18px',
+      }}>
+        <button
+          onClick={() => selected && onRun(selected)}
+          disabled={!selected || isRunning}
+          style={{
+            padding: '14px',
+            borderRadius: '10px',
+            border: 'none',
+            background: isRunning
+              ? 'var(--bg-card)'
+              : 'linear-gradient(135deg, var(--accent-blue), var(--accent-purple))',
+            color: 'white',
+            fontWeight: 700,
+            fontSize: '13px',
+            letterSpacing: '2px',
+            cursor: selected && !isRunning ? 'pointer' : 'not-allowed',
+            opacity: !selected ? 0.5 : 1,
+            transition: 'all 0.2s ease',
+            boxShadow: isRunning ? 'none' : '0 0 20px var(--glow-blue)',
+            width: '100%',
+          }}
+        >
+          {isRunning ? 'ASSESSING...' : selectedHasResult ? 'RE-RUN ASSESSMENT' : 'RUN ASSESSMENT'}
+        </button>
+
+        <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.8', marginTop: 10 }}>
+          ReAct Loop · Tool Registry · XGBoost · SHAP · Fairness Metrics
+        </div>
+      </div>
+
+      {false && !isMobile && <div style={{ flex: 1 }} />}
 
       <button
         onClick={() => selected && onRun(selected)}
         disabled={!selected || isRunning}
         style={{
+          display: 'none',
+          position: isMobile ? 'sticky' : 'static',
+          bottom: isMobile ? 12 : 'auto',
           padding: '14px',
           borderRadius: '10px',
           border: 'none',
@@ -520,12 +635,15 @@ export default function LeftSidebar({
           opacity: !selected ? 0.5 : 1,
           transition: 'all 0.2s ease',
           boxShadow: isRunning ? 'none' : '0 0 20px var(--glow-blue)',
+          width: '100%',
+          marginTop: isMobile ? 'auto' : 0,
+          zIndex: isMobile ? 1 : 'auto',
         }}
       >
         {isRunning ? '◌  ASSESSING...' : selectedHasResult ? '▶  RE-RUN ASSESSMENT' : '▶  RUN ASSESSMENT'}
       </button>
 
-      <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.8' }}>
+      <div style={{ display: 'none', fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.8' }}>
         ReAct Loop · Tool Registry · XGBoost · SHAP · Fairness Metrics
       </div>
     </div>

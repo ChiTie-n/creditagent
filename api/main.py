@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT))
 from dotenv import load_dotenv
 load_dotenv(ROOT / ".env")
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List, Dict, Any
@@ -24,6 +24,7 @@ from agents.react_orchestrator import ReActOrchestrator
 from agents.agent_memory import get_session_history
 from mock_data.personas import PERSONAS
 from mock_data.persona_store import (
+    delete_custom_persona,
     hydrate_personas,
     list_custom_personas,
     next_custom_borrower_id,
@@ -254,6 +255,17 @@ def create_persona(request: CreatePersonaRequest):
     save_custom_personas(custom_personas)
 
     return _to_persona_info(borrower_id, persona)
+
+
+@app.delete("/personas/{borrower_id}", status_code=204)
+def delete_persona(borrower_id: str):
+    if borrower_id not in PERSONAS:
+        raise HTTPException(status_code=404, detail=f"Borrower '{borrower_id}' not found")
+    if not borrower_id.startswith("custom_"):
+        raise HTTPException(status_code=403, detail="Only custom borrower profiles can be deleted")
+    if not delete_custom_persona(borrower_id):
+        raise HTTPException(status_code=404, detail=f"Custom borrower '{borrower_id}' not found")
+    return Response(status_code=204)
 
 
 @app.post("/assess", response_model=CreditAssessmentResult)

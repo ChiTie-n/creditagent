@@ -58,3 +58,17 @@ def next_custom_borrower_id() -> str:
             max_suffix = max(max_suffix, int(suffix))
 
     return f"custom_{max_suffix + 1:03d}"
+
+
+def delete_custom_persona(borrower_id: str) -> bool:
+    if not borrower_id.startswith("custom_"):
+        return False
+
+    custom_personas = load_custom_personas()
+    if borrower_id not in custom_personas:
+        return False
+
+    custom_personas.pop(borrower_id, None)
+    PERSONAS.pop(borrower_id, None)
+    save_custom_personas(custom_personas)
+    return True

@@ -17,6 +17,8 @@ export default function App() {
   const [sessionsByBorrower, setSessionsByBorrower] = useState({})
   const [runningBorrower, setRunningBorrower] = useState(null)
   const [selectedProfile, setSelectedProfile] = useState(null)
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
+  const [mobilePanel, setMobilePanel] = useState('borrowers')
 
   const currentSession = useMemo(
     () => (selectedBorrower && sessionsByBorrower[selectedBorrower]) || EMPTY_SESSION,
@@ -24,6 +26,23 @@ export default function App() {
   )
   const currentResult = selectedBorrower ? resultsByBorrower[selectedBorrower] || null : null
   const isRunning = runningBorrower !== null
+  const isMobile = viewportWidth < 960
+
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobilePanel('borrowers')
+      return
+    }
+    if (mobilePanel === 'result' && !currentResult) {
+      setMobilePanel(selectedBorrower ? 'workflow' : 'borrowers')
+    }
+  }, [isMobile, mobilePanel, currentResult, selectedBorrower])
 
   useEffect(() => {
     if (!selectedBorrower) {
@@ -40,6 +59,7 @@ export default function App() {
   const handleRun = (borrowerId) => {
     setSelectedBorrower(borrowerId)
     setRunningBorrower(borrowerId)
+    if (isMobile) setMobilePanel('workflow')
     setSessionsByBorrower(prev => ({
       ...prev,
       [borrowerId]: {
@@ -152,6 +172,7 @@ export default function App() {
               agenticMode: data.result.agentic_mode,
             },
           }))
+          if (isMobile) setMobilePanel('result')
           setRunningBorrower(current => current === borrowerId ? null : current)
           eventSource.close()
           break
@@ -183,6 +204,142 @@ export default function App() {
     }
   }
 
+  const handleDeleteBorrower = (borrowerId) => {
+    if (selectedBorrower === borrowerId) {
+      setSelectedBorrower(null)
+      setSelectedProfile(null)
+      if (isMobile) setMobilePanel('borrowers')
+    }
+
+    setResultsByBorrower(prev => {
+      const next = { ...prev }
+      delete next[borrowerId]
+      return next
+    })
+    setSessionsByBorrower(prev => {
+      const next = { ...prev }
+      delete next[borrowerId]
+      return next
+    })
+    setRunningBorrower(current => current === borrowerId ? null : current)
+  }
+
+  const mobileTabs = [
+    { id: 'borrowers', label: 'Borrowers', enabled: true },
+    { id: 'workflow', label: 'Workflow', enabled: Boolean(selectedBorrower) },
+    { id: 'result', label: 'Result', enabled: Boolean(currentResult) },
+  ]
+
+  if (isMobile) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        background: 'var(--bg-primary)',
+      }}>
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          background: 'rgba(10,14,26,0.96)',
+          backdropFilter: 'blur(14px)',
+          borderBottom: '1px solid var(--border)',
+          padding: '14px 14px 12px',
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: 12,
+          }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '1.5px', color: 'var(--accent-blue)' }}>
+                CREDITAGENT
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                Mobile assessment workspace
+              </div>
+            </div>
+            {selectedBorrower && (
+              <div style={{
+                padding: '6px 10px',
+                borderRadius: 999,
+                border: '1px solid rgba(59,130,246,0.25)',
+                background: 'rgba(59,130,246,0.1)',
+                color: '#93c5fd',
+                fontSize: 10,
+                letterSpacing: '1px',
+              }}>
+                {selectedBorrower.toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: 8,
+          }}>
+            {mobileTabs.map(tab => {
+              const active = mobilePanel === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  disabled={!tab.enabled}
+                  onClick={() => tab.enabled && setMobilePanel(tab.id)}
+                  style={{
+                    border: `1px solid ${active ? 'rgba(59,130,246,0.35)' : 'var(--border)'}`,
+                    background: active ? 'rgba(59,130,246,0.14)' : 'var(--bg-secondary)',
+                    color: tab.enabled ? (active ? '#bfdbfe' : '#94a3b8') : '#475569',
+                    borderRadius: 12,
+                    padding: '10px 8px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.8px',
+                  }}
+                >
+                  {tab.label.toUpperCase()}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 0 }}>
+          {mobilePanel === 'borrowers' && (
+            <LeftSidebar
+              selected={selectedBorrower}
+              onSelect={setSelectedBorrower}
+              onRun={handleRun}
+              onDeleteBorrower={handleDeleteBorrower}
+              isRunning={isRunning}
+              runningBorrower={runningBorrower}
+              resultsByBorrower={resultsByBorrower}
+              isMobile
+            />
+          )}
+          {mobilePanel === 'workflow' && (
+            <AgentFlow
+              borrower={selectedProfile}
+              steps={currentSession.steps}
+              thoughts={currentSession.thoughts}
+              llmStatus={currentSession.llmStatus}
+              isRunning={runningBorrower === selectedBorrower}
+              agenticMode={currentSession.agenticMode}
+              isMobile
+            />
+          )}
+          {mobilePanel === 'result' && currentResult && (
+            <ResultSidebar result={currentResult} borrowerId={selectedBorrower} isMobile />
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{
       display: 'grid',
@@ -196,9 +353,11 @@ export default function App() {
         selected={selectedBorrower}
         onSelect={setSelectedBorrower}
         onRun={handleRun}
+        onDeleteBorrower={handleDeleteBorrower}
         isRunning={isRunning}
         runningBorrower={runningBorrower}
         resultsByBorrower={resultsByBorrower}
+        isMobile={false}
       />
       <AgentFlow
         borrower={selectedProfile}
@@ -207,9 +366,10 @@ export default function App() {
         llmStatus={currentSession.llmStatus}
         isRunning={runningBorrower === selectedBorrower}
         agenticMode={currentSession.agenticMode}
+        isMobile={false}
       />
       {currentResult && (
-        <ResultSidebar result={currentResult} borrowerId={selectedBorrower} />
+        <ResultSidebar result={currentResult} borrowerId={selectedBorrower} isMobile={false} />
       )}
     </div>
   )

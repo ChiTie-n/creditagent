@@ -164,34 +164,33 @@ function SourceBadge({ label, active, color }) {
   )
 }
 
-function BorrowerCard({ borrower }) {
+function BorrowerCard({ borrower, isMobile = false }) {
   if (!borrower) return null
 
   const profile = borrower.profile || {}
   const sources = borrower.sources_available || {}
-
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '120px 1fr',
-      gap: '18px',
-      padding: '18px 20px',
+      gridTemplateColumns: isMobile ? '1fr' : '120px 1fr',
+      gap: isMobile ? '16px' : '18px',
+      padding: isMobile ? '16px' : '18px 20px',
       borderRadius: '18px',
       border: '1px solid rgba(30,45,74,0.9)',
       background: 'linear-gradient(135deg, rgba(17,24,39,0.92), rgba(10,14,26,0.96))',
       boxShadow: '0 18px 60px rgba(2,6,23,0.35)',
     }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', alignItems: 'center', gap: 10 }}>
         <div style={{
-          width: 84,
-          height: 84,
+          width: isMobile ? 68 : 84,
+          height: isMobile ? 68 : 84,
           borderRadius: '24px',
           display: 'grid',
           placeItems: 'center',
           background: 'linear-gradient(135deg, rgba(59,130,246,0.28), rgba(16,185,129,0.18))',
           border: '1px solid rgba(96,165,250,0.28)',
           color: '#dbeafe',
-          fontSize: '28px',
+          fontSize: isMobile ? '22px' : '28px',
           fontWeight: 800,
           letterSpacing: '1px',
         }}>
@@ -210,12 +209,12 @@ function BorrowerCard({ borrower }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
           <div>
             <div style={{ fontSize: '11px', color: '#64748b', letterSpacing: '1.5px', marginBottom: 6 }}>
               CUSTOMER PROFILE
             </div>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#f8fafc', lineHeight: 1.1 }}>
+            <div style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 700, color: '#f8fafc', lineHeight: 1.1 }}>
               {borrower.name}
             </div>
             <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: 6 }}>
@@ -223,8 +222,9 @@ function BorrowerCard({ borrower }) {
             </div>
           </div>
           <div style={{
-            minWidth: 160,
-            textAlign: 'right',
+            minWidth: isMobile ? 'auto' : 160,
+            width: isMobile ? '100%' : 'auto',
+            textAlign: isMobile ? 'left' : 'right',
             padding: '10px 12px',
             borderRadius: '12px',
             background: 'rgba(16,185,129,0.08)',
@@ -233,7 +233,7 @@ function BorrowerCard({ borrower }) {
             <div style={{ fontSize: '10px', color: '#34d399', letterSpacing: '1px' }}>
               REQUESTED LOAN
             </div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#ecfeff', marginTop: 4 }}>
+            <div style={{ fontSize: isMobile ? '18px' : '20px', fontWeight: 700, color: '#ecfeff', marginTop: 4 }}>
               {formatCurrency(borrower.loan_amount_requested)}
             </div>
           </div>
@@ -243,7 +243,7 @@ function BorrowerCard({ borrower }) {
           {borrower.scenario}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
           <InfoStat label="Business Type" value={borrower.business_type} />
           <InfoStat label="Loan Purpose" value={borrower.loan_purpose} />
           <InfoStat label="Region" value={profile.region || 'N/A'} />
@@ -290,7 +290,7 @@ function InfoStat({ label, value }) {
   )
 }
 
-export default function AgentFlow({ borrower, steps, thoughts, llmStatus, isRunning, agenticMode }) {
+export default function AgentFlow({ borrower, steps, thoughts, llmStatus, isRunning, agenticMode, isMobile = false }) {
   const logRef = useRef(null)
   const getStep = (agent) => steps.find(s => s.agent === agent)
 
@@ -308,13 +308,14 @@ export default function AgentFlow({ borrower, steps, thoughts, llmStatus, isRunn
       background: 'var(--bg-primary)',
       display: 'flex',
       flexDirection: 'column',
-      padding: '28px 32px',
-      gap: '24px',
+      padding: isMobile ? '16px 14px 24px' : '28px 32px',
+      gap: isMobile ? '18px' : '24px',
       overflow: 'hidden',
+      minHeight: 0,
     }}>
-      {borrower && <BorrowerCard borrower={borrower} />}
+      {borrower && <BorrowerCard borrower={borrower} isMobile={isMobile} />}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: '16px', flexDirection: isMobile ? 'column' : 'row' }}>
         <div>
           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', letterSpacing: '2px' }}>
             AGENTIC WORKFLOW
@@ -326,12 +327,16 @@ export default function AgentFlow({ borrower, steps, thoughts, llmStatus, isRunn
       <div style={{
         display: 'flex',
         alignItems: 'flex-start',
-        flexWrap: 'wrap',
+        flexWrap: isMobile ? 'nowrap' : 'wrap',
         rowGap: '16px',
+        columnGap: isMobile ? '0' : '0',
+        overflowX: isMobile ? 'auto' : 'visible',
+        overflowY: 'hidden',
+        paddingBottom: isMobile ? 6 : 0,
       }}>
         {AGENT_ORDER.map((agent, i) => (
           <div key={agent} style={{ display: 'flex', alignItems: 'center' }}>
-            <FlowNode agent={agent} step={getStep(agent)} />
+            <FlowNode agent={agent} step={getStep(agent)} isMobile={isMobile} />
             {i < AGENT_ORDER.length - 1 && (
               <Connector active={isConnectorActive(agent)} />
             )}
@@ -359,7 +364,7 @@ export default function AgentFlow({ borrower, steps, thoughts, llmStatus, isRunn
           .map((item, i) => (
             item._type === 'thought'
               ? <ThoughtBubble key={`t-${i}`} thought={item} />
-              : <StepLog key={`s-${i}`} step={item} />
+              : <StepLog key={`s-${i}`} step={item} isMobile={isMobile} />
           ))}
 
         <ThinkingBubble llmStatus={llmStatus} />
@@ -380,13 +385,14 @@ export default function AgentFlow({ borrower, steps, thoughts, llmStatus, isRunn
   )
 }
 
-function StepLog({ step }) {
+function StepLog({ step, isMobile = false }) {
   const STATUS_COLOR = { done: '#10b981', error: '#ef4444', override: '#f59e0b' }
   const color = STATUS_COLOR[step.status] || '#64748b'
 
   return (
     <div style={{
       display: 'flex', gap: '10px', alignItems: 'flex-start',
+      flexDirection: isMobile ? 'column' : 'row',
       padding: '6px 10px',
       background: 'var(--bg-secondary)',
       borderRadius: '6px',
@@ -394,10 +400,10 @@ function StepLog({ step }) {
       animation: 'slideIn 0.3s ease',
       fontSize: '12px',
     }}>
-      <span style={{ color, minWidth: '40px', fontWeight: 600, fontSize: '10px', paddingTop: 1 }}>
+      <span style={{ color, minWidth: isMobile ? 'auto' : '40px', fontWeight: 600, fontSize: '10px', paddingTop: 1 }}>
         {step.status?.toUpperCase()}
       </span>
-      <span style={{ color: '#94a3b8', minWidth: '150px' }}>
+      <span style={{ color: '#94a3b8', minWidth: isMobile ? 'auto' : '150px' }}>
         {step.agent?.replace('Agent', ' Agent')}
       </span>
       <span style={{ color: '#64748b', lineHeight: 1.4 }}>

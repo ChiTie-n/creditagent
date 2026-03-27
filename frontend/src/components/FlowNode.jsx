@@ -17,7 +17,7 @@ const AGENT_ICONS = {
   ReActOrchestrator:     '⚙️',
 }
 
-export default function FlowNode({ agent, step }) {
+export default function FlowNode({ agent, step, isMobile = false }) {
   const status = step?.status || 'idle'
   const s = STATUS_STYLES[status] || STATUS_STYLES.idle
 
@@ -30,10 +30,12 @@ export default function FlowNode({ agent, step }) {
       background: s.bg,
       boxShadow: s.glow,
       borderRadius: '12px',
-      padding: '14px 18px',
-      minWidth: '200px',
+      padding: isMobile ? '12px 14px' : '14px 18px',
+      minWidth: isMobile ? '170px' : '200px',
+      width: isMobile ? '170px' : 'auto',
       transition: 'all 0.4s ease',
       position: 'relative',
+      flexShrink: 0,
     }}>
       {/* Status dot */}
       <div style={{
@@ -44,18 +46,18 @@ export default function FlowNode({ agent, step }) {
         animation: status === 'running' ? 'pulse 1s infinite' : 'none',
       }} />
 
-      <div style={{ fontSize: '20px', marginBottom: 6 }}>
+      <div style={{ fontSize: isMobile ? '18px' : '20px', marginBottom: 6 }}>
         {AGENT_ICONS[agent] || '◇'}
       </div>
-      <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: '#94a3b8' }}>
+      <div style={{ fontSize: isMobile ? '10px' : '11px', fontWeight: 700, letterSpacing: '1px', color: '#94a3b8' }}>
         {displayName}
       </div>
 
       {step?.output && (
         <div style={{
-          fontSize: '10px', color: '#64748b',
+          fontSize: isMobile ? '9px' : '10px', color: '#64748b',
           marginTop: 6, lineHeight: 1.4,
-          height: '30px', 
+          height: isMobile ? '26px' : '30px',
           overflow: 'hidden',
           display: '-webkit-box',
           WebkitLineClamp: 2,
